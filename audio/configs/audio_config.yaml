@@ -1,0 +1,21 @@
+# Audio Speech Recognition Configuration
+
+# Dataset Configuration
+dataset:
+  root_dir: '/home/aswath/Projects/capstone/multimodel_lipread/data/GLips_4'
+  num_classes: 4
+  input_size: 117
+  
+# Model Configuration
+model:
+  name: 'lstm_resnet_trans'  # Options: resnet, resnet_lstm, vgg, vgg_lstm, lstm_resnet, lstm_resnet_attn, lstm_resnet_trans
+  version: 16
+  fc_hidden_size: 512
+  dropout: 0.5
+  feature_dim: 512  # Output feature dimension
+  
+# Training Configuration
+training:
+  batch_size: 32
+  learning_rate: 0.0005
+  epochs: 3
