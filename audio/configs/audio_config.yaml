@@ -8,7 +8,7 @@ dataset:
   
 # Model Configuration
 model:
-  name: 'lstm_resnet_trans'  # Options: resnet, resnet_lstm, vgg, vgg_lstm, lstm_resnet, lstm_resnet_attn, lstm_resnet_trans
+  name: 'resnet'  # Options: resnet, resnet_lstm, vgg, vgg_lstm, lstm_resnet, lstm_resnet_attn, lstm_resnet_trans
   version: 16
   fc_hidden_size: 512
   dropout: 0.5
