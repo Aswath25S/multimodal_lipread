@@ -14,6 +14,48 @@ from configs.config import load_config
 from tqdm import tqdm
 import argparse
 
+import csv
+import os
+
+def init_log_files(model_name):
+    # CSV log header
+    if not os.path.exists(f"./metrics/{model_name}_training_log.csv"):
+        with open(f"./metrics/{model_name}_training_log.csv", "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow([
+                "epoch",
+                "train_loss", "train_acc",
+                "val_loss", "val_acc",
+                "test_loss", "test_acc"
+            ])
+
+def log_to_files(model_name, epoch, train_loss, train_acc, val_loss, val_acc, test_loss, test_acc):
+    # CSV log
+    with open(f"./metrics/{model_name}_training_log.csv", "a", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow([
+            epoch,
+            train_loss, train_acc,
+            val_loss, val_acc,
+            test_loss, test_acc
+        ])
+    
+    # Text log
+    with open(f"./metrics/{model_name}_training_log.txt", "a") as f:
+        f.write(
+            f"Epoch {epoch}\n"
+            f"  Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.2f}%\n"
+            f"  Val Loss:   {val_loss:.4f}, Val Acc:   {val_acc:.2f}%\n"
+            f"  Test Loss:  {test_loss:.4f}, Test Acc:  {test_acc:.2f}%\n\n"
+        )
+
+def log_final_results(model_name, test_loss, test_acc):
+    with open(f"./metrics/{model_name}_training_log.txt", "a") as f:
+        f.write(
+            f"Final Test Loss: {test_loss:.4f}, Final Test Acc: {test_acc:.2f}%\n"
+        )
+
+
 def train_epoch(model, dataloader, criterion, optimizer, device):
     model.train()
     total_loss = 0
@@ -103,6 +145,8 @@ def main(config_path, device):
     model_name = config.get('model.name')
     version = config.get('model.version')
 
+    init_log_files(model_name)
+
     train_loader, val_loader, test_loader = load_data(data_path, batch_size, input_size)
 
     model = get_model(num_classes, input_size, model_name, version)
@@ -113,8 +157,8 @@ def main(config_path, device):
 
     # Training loop
     best_val_acc = 0
-    for epoch in range(epochs):
-        print(f'\nEpoch {epoch+1}/{epochs}')
+    for epoch in range(1, epochs + 1):
+        print(f'\nEpoch {epoch}/{epochs}')
         
         train_loss, train_acc = train_epoch(model, train_loader, criterion, optimizer, device)
         val_loss, val_acc = validate(model, val_loader, criterion, device)
@@ -132,12 +176,19 @@ def main(config_path, device):
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 'val_acc': val_acc,
-            }, 'best_model.pth')
+            }, f'./models_trained/{model_name}.pth')
+        
+        test_loss, test_acc = validate(model, test_loader, criterion, device)
+        print(f"Test Loss:  {test_loss:.4f} | Test Acc:  {test_acc:.2f}%")
+
+        log_to_files(model_name, epoch, train_loss, train_acc, val_loss, val_acc, test_loss, test_acc)
     
     # Test
-    model.load_state_dict(torch.load('best_model.pth')['model_state_dict'])
+    model.load_state_dict(torch.load(f'./models_trained/{model_name}.pth')['model_state_dict'])
     test_loss, test_acc = validate(model, test_loader, criterion, device)
     print(f'\nTest Loss: {test_loss:.4f} | Test Acc: {test_acc:.2f}%')
+
+    log_final_results(model_name, test_loss, test_acc)
 
 if __name__ == '__main__':
     config_path = "/home/aswath/Projects/capstone/multimodel_lipread/audio/configs/audio_config.yaml"
