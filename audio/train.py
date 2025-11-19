@@ -140,6 +140,7 @@ def main(config_path, device):
     input_size = config.get('dataset.input_size')
     batch_size = config.get('training.batch_size')
     learning_rate = config.get('training.learning_rate')
+    weight_decay = config.get('training.weight_decay')
     epochs = config.get('training.epochs')
     epochs = 5
     model_name = config.get('model.name')
@@ -152,7 +153,7 @@ def main(config_path, device):
     model = get_model(num_classes, input_size, model_name, version)
     model.to(device)
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5)
 
     # Training loop
