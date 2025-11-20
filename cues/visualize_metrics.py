@@ -59,5 +59,5 @@ def plot_logs(model_name):
 
 
 if __name__ == "__main__":
-    model_name = "minilm_lstm_attn"
+    model_name = "dense_nn"
     plot_logs(model_name)
