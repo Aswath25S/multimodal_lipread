@@ -1,4 +1,6 @@
-# Audio Speech Recognition Configuration
+# Main
+main:
+  base_path: '/home/aswath/Projects/capstone/multimodel_lipread/cues'
 
 # Dataset Configuration
 dataset:
@@ -11,6 +13,10 @@ dataset:
 cue_dataset:
   input_dir: '/home/aswath/Projects/capstone/multimodel_lipread/data/GLips_4/cue_data'
   output_dir: '/home/aswath/Projects/capstone/multimodel_lipread/data/GLips_4/Descriptions'
+
+# Old Description
+old_description:
+  input_dir: '/home/aswath/Projects/capstone/multimodel_lipread/data/Descriptions'
 
 # Model Configuration
 model:
