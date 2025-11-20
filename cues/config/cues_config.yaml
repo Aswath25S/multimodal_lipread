@@ -6,7 +6,12 @@ dataset:
   output_dir: '/home/aswath/Projects/capstone/multimodel_lipread/data/GLips_4/cue_data'
   num_classes: 4
   input_size: 117
-  
+
+# Cue Dataset Configuration
+cue_dataset:
+  input_dir: '/home/aswath/Projects/capstone/multimodel_lipread/data/GLips_4/cue_data'
+  output_dir: '/home/aswath/Projects/capstone/multimodel_lipread/data/GLips_4/Descriptions'
+
 # Model Configuration
 model:
   name: 'resnet'  # Options: resnet, resnet_lstm, vgg, vgg_lstm, lstm_resnet, lstm_resnet_attn, lstm_resnet_trans
