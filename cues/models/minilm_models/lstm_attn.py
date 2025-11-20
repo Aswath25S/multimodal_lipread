@@ -9,9 +9,7 @@ from tqdm.auto import tqdm
 from sentence_transformers import SentenceTransformer
 
 sys.path.append('/home/aswath/Projects/capstone/multimodel_lipread/cues')
-
 from config.config import load_config
-
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -28,7 +26,7 @@ def get_constants(config, mode="env"):
     ]
 
     # all-MiniLM-L6-v2, all-MiniLM-L12-v2, all-mpnet-base-v2, all-distilroberta-v1
-    EMBEDDING_MODEL = "all-MiniLM-L6-v2"
+    EMBEDDING_MODEL = "all-mpnet-base-v2"
     BATCH_SIZE = 16
     SEED = 42
     NUM_EPOCHS = 12
@@ -68,18 +66,20 @@ def embed_sentences(model, sentences):
 
 
 # ---------------------------------------------------------------------------
-# LSTM Classifier
+# Attention + BiLSTM Classifier
 # ---------------------------------------------------------------------------
-class LSTMClassifier(nn.Module):
+class AttentionLSTMClassifier(nn.Module):
     def __init__(self, embed_dim, hidden_dim, num_labels):
         super().__init__()
 
+        # Dense projection before LSTM
         self.input_dense = nn.Sequential(
             nn.Linear(embed_dim, 256),
             nn.ReLU(),
             nn.Dropout(0.2),
         )
 
+        # BiLSTM
         self.lstm = nn.LSTM(
             input_size=256,
             hidden_size=hidden_dim,
@@ -88,6 +88,10 @@ class LSTMClassifier(nn.Module):
             bidirectional=True,
         )
 
+        # Attention layer
+        self.attention = nn.Linear(hidden_dim * 2, 1)
+
+        # Output layers
         self.output_dense = nn.Sequential(
             nn.Linear(hidden_dim * 2, 128),
             nn.ReLU(),
@@ -96,16 +100,24 @@ class LSTMClassifier(nn.Module):
         )
 
     def forward(self, x):
-        x = self.input_dense(x)      # (batch, 256)
-        x = x.unsqueeze(1)           # (batch, 1, 256)
-        lstm_out, _ = self.lstm(x)
-        lstm_out = lstm_out[:, -1, :]
-        logits = self.output_dense(lstm_out)
+        # x shape: (batch, embed_dim)
+        x = self.input_dense(x)          # (batch, 256)
+        x = x.unsqueeze(1)               # (batch, seq_len=1, 256)
+
+        lstm_out, _ = self.lstm(x)       # (batch, seq_len, hidden_dim*2)
+
+        # Attention weights
+        attn_weights = torch.softmax(self.attention(lstm_out), dim=1)  # (batch, seq_len, 1)
+
+        # Weighted sum over LSTM outputs
+        attn_output = torch.sum(attn_weights * lstm_out, dim=1)         # (batch, hidden_dim*2)
+
+        logits = self.output_dense(attn_output)
         return logits
 
 
 # ---------------------------------------------------------------------------
-# Evaluation With Metrics
+# Evaluation
 # ---------------------------------------------------------------------------
 def evaluate(model, loader, criterion, device, desc="Validating"):
     model.eval()
@@ -116,7 +128,6 @@ def evaluate(model, loader, criterion, device, desc="Validating"):
     with torch.no_grad():
         for x, y in tqdm(loader, desc=desc):
             x, y = x.to(device), y.to(device)
-
             logits = model(x)
             loss = criterion(logits, y)
 
@@ -129,11 +140,10 @@ def evaluate(model, loader, criterion, device, desc="Validating"):
 
 
 # ---------------------------------------------------------------------------
-# Logging Utilities (matching your audio trainer)
+# Logging
 # ---------------------------------------------------------------------------
 def init_log_files(model_name, metrics_path):
     os.makedirs(metrics_path, exist_ok=True)
-
     csv_path = f"{metrics_path}/{model_name}_training_log.csv"
     if not os.path.exists(csv_path):
         with open(csv_path, "w") as f:
@@ -144,7 +154,6 @@ def log_to_files(model_name, epoch, train_loss, train_acc, val_loss, val_acc):
     metrics_path = "/home/aswath/Projects/capstone/multimodel_lipread/cues/metrics"
     with open(f"{metrics_path}/{model_name}_training_log.csv", "a") as f:
         f.write(f"{epoch},{train_loss},{train_acc},{val_loss},{val_acc}\n")
-
     with open(f"{metrics_path}/{model_name}_training_log.txt", "a") as f:
         f.write(
             f"Epoch {epoch}\n"
@@ -154,9 +163,9 @@ def log_to_files(model_name, epoch, train_loss, train_acc, val_loss, val_acc):
 
 
 # ---------------------------------------------------------------------------
-# Training Loop With Full Tracking + Best Model Saving
+# Training Loop
 # ---------------------------------------------------------------------------
-def train(model, train_loader, valid_loader, device, lr, epochs, metrics_path, model_path, model_name="minilm_lstm"):
+def train(model, train_loader, valid_loader, device, lr, epochs, metrics_path, model_path, model_name="minilm_lstm_attn"):
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     criterion = nn.CrossEntropyLoss()
 
@@ -174,7 +183,6 @@ def train(model, train_loader, valid_loader, device, lr, epochs, metrics_path, m
         pbar = tqdm(train_loader, desc=f"Epoch {epoch}/{epochs}")
         for x, y in pbar:
             x, y = x.to(device), y.to(device)
-
             optimizer.zero_grad()
             logits = model(x)
             loss = criterion(logits, y)
@@ -218,52 +226,44 @@ def train(model, train_loader, valid_loader, device, lr, epochs, metrics_path, m
 # Main Pipeline
 # ---------------------------------------------------------------------------
 def main():
-    # Load config
     config_path = "/home/aswath/Projects/capstone/multimodel_lipread/cues/config/cues_config.yaml"
     config = load_config(config_path)
-    data_dir, base_path, json_files, EMB_MODEL, BATCH_SIZE, SEED, EPOCHS, LR = get_constants(config)
 
+    data_dir, base_path, json_files, EMB_MODEL, BATCH_SIZE, SEED, EPOCHS, LR = get_constants(config)
     metrics_path = f"{base_path}/metrics"
     models_path = f"{base_path}/models_trained"
 
     raw_ds = load_raw_dataset(data_dir, json_files)
     raw_ds, unique_words = encode_labels(raw_ds)
 
-    # Split
     splits = raw_ds.train_test_split(test_size=0.1, seed=SEED)
     train_ds, test_ds = splits["train"], splits["test"]
 
-    # Embeddings
     embedding_model = SentenceTransformer(EMB_MODEL)
 
     print("\nEmbedding training set...")
     X_train = embed_sentences(embedding_model, train_ds["description"])
-
     print("Embedding validation set...")
     X_test = embed_sentences(embedding_model, test_ds["description"])
 
     y_train = np.array(train_ds["word"])
     y_test = np.array(test_ds["word"])
 
-    train_tensor = TensorDataset(
-        torch.tensor(X_train, dtype=torch.float32),
-        torch.tensor(y_train, dtype=torch.long)
-    )
-    test_tensor = TensorDataset(
-        torch.tensor(X_test, dtype=torch.float32),
-        torch.tensor(y_test, dtype=torch.long)
-    )
+    train_tensor = TensorDataset(torch.tensor(X_train, dtype=torch.float32),
+                                 torch.tensor(y_train, dtype=torch.long))
+    test_tensor = TensorDataset(torch.tensor(X_test, dtype=torch.float32),
+                                torch.tensor(y_test, dtype=torch.long))
 
     train_loader = DataLoader(train_tensor, batch_size=BATCH_SIZE, shuffle=True)
     valid_loader = DataLoader(test_tensor, batch_size=BATCH_SIZE, shuffle=False)
 
     embed_dim = X_train.shape[1]
-    model = LSTMClassifier(embed_dim=embed_dim, hidden_dim=128, num_labels=len(unique_words))
+    model = AttentionLSTMClassifier(embed_dim=embed_dim, hidden_dim=128, num_labels=len(unique_words))
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
 
-    train(model, train_loader, valid_loader, device, LR, EPOCHS, metrics_path, models_path, model_name="minilm_lstm")
+    train(model, train_loader, valid_loader, device, LR, EPOCHS, metrics_path, models_path, model_name="minilm_lstm_attn")
 
 
 # ---------------------------------------------------------------------------
