@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
-from data.dataset import GLipsDataset
+from data_utils.dataset import GLipsDataset
 from models.resnet_model import AudioResNet
 from models.resnet_lstm_model import AudioResNetLSTM
 from models.vgg_model import VGGAudioClassifier
