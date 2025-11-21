@@ -1,0 +1,67 @@
+# Simplified Visual Speech Recognition Configuration for Debugging Learning Issues
+
+# Dataset Configuration
+dataset:
+  root_dir: '../GLips_4'
+  train_split: 0.7
+  val_split: 0.15
+  test_split: 0.15
+  
+# Preprocessing Configuration
+preprocessing:
+  image_size: [44, 44, 3]
+  sequence_length: 29
+  use_mediapipe: true
+  padding_mode: 'average'
+  
+# Model Configuration
+model:
+  name: 'cnn2d_bilstm'  # Use the simplified model
+  dropout: 0.3  # Reduced dropout rate
+  
+# Training settings
+training:
+  epochs: 100
+  batch_size: 32
+  optimizer: adam
+  learning_rate: 0.0003  # Lower learning rate for better convergence
+  weight_decay: 0.0001  # Reduced weight decay
+  scheduler: step  # Simpler scheduler
+  scheduler_step_size: 10
+  scheduler_gamma: 0.5
+  warmup_epochs: 0  # Disabled warmup for simplicity
+  early_stopping: false
+  early_stopping_patience: 10
+  early_stopping_min_delta: 0.0001
+  save_dir: 'checkpoints/visual_simplified'
+
+# Simplified Augmentation settings - reduced to a minimum
+augmentation:
+  # MixUp augmentation - disabled for debugging
+  mixup:
+    enabled: false
+    alpha: 0.2
+    probability: 0.0
+  # Label smoothing - kept but minimal
+  label_smoothing:
+    enabled: true
+    smoothing: 0.05
+  # Affine transformation - minimal
+  affine_transform:
+    enabled: true
+    probability: 0.2
+    rotation_range: [-5, 5]
+    scale_range: [0.95, 1.05]
+    translation_percent: 0.05
+  # Random erasing - disabled for debugging
+  random_erasing:
+    enabled: false
+    probability: 0.0
+  # Color jitter - minimal
+  color_jitter:
+    enabled: true
+    probability: 0.2
+    brightness: 0.1
+    contrast: 0.1
+    saturation: 0.1
+    hue: 0.05

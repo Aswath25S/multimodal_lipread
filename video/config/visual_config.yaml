@@ -1,0 +1,46 @@
+# Visual Speech Recognition Configuration
+
+# Dataset Configuration
+dataset:
+  root_dir: '/home/aswath/Projects/capstone/multimodel_lipread/data/GLips_4'
+  
+# Preprocessing Configuration
+preprocessing:
+  image_size: [44, 44, 3]
+  sequence_length: 29  # frames per second in the video
+  use_mediapipe: true
+  padding_mode: 'average'  # Padding with average pixel values
+  
+# Model Configuration
+model:
+  name: '2dcnn_bilstm'  # Options: 2dcnn_bilstm, 3dcnn, 3dcnn_bilstm
+  resnet_version: 18
+  fc_hidden_size: 1024
+  dropout: 0.5
+  feature_dim: 1024  # Output feature dimension
+  
+# Training Configuration
+training:
+  batch_size: 4
+  learning_rate: 0.0001
+  epochs: 100
+  optimizer: 'adam'
+  scheduler: 'cosine'
+  weight_decay: 0.0001
+  save_dir: 'checkpoints/visual'
+  
+# Augmentation Configuration
+augmentation:
+  mixup:
+    enabled: true
+    probability: 0.2  # p = 20%
+    alpha: 1.0
+  label_smoothing:
+    enabled: true
+    alpha: 0.1  # α = 0.1
+  affine_transform:
+    enabled: true
+    probability: 0.2  # p = 20%
+    rotation_range: [-10, 10]
+    scale_range: [0.9, 1.1]
+    translation_percent: 0.1
