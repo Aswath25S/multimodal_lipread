@@ -1,0 +1,86 @@
+# Audio Video Configuration
+
+# Dataset Configuration
+dataset:
+  root_dir: '/home/aswath/Projects/capstone/multimodel_lipread/data/GLips_4'
+  audio_input_size: 117
+  num_classes: 4
+
+audio:
+  input_channels: 1
+  input_freq: 128
+  lstm_hidden: 256
+
+video:
+  feature_dim: 512
+  lstm_hidden: 256
+
+training:
+  epochs : 2
+  learning_rate: 0.0003
+  batch_size: 4
+
+
+
+
+
+
+
+
+
+# Audio Model Configuration
+audio_model:
+  name: 'resnet'  # Options: resnet, resnet_lstm, vgg, vgg_lstm, lstm_resnet, lstm_resnet_attn, lstm_resnet_trans
+  version: 16
+  fc_hidden_size: 512
+  dropout: 0.5
+  feature_dim: 512  # Output feature dimension
+  
+# Audio Training Configuration
+audio_training:
+  input_size: 117
+  batch_size: 32
+  learning_rate: 0.0005
+  weight_decay: 0.0001
+  epochs: 3
+
+# Video Preprocessing Configuration
+video_preprocessing:
+  image_size: [44, 44, 3]
+  sequence_length: 29  # frames per second in the video
+  use_mediapipe: true
+  padding_mode: 'average'  # Padding with average pixel values
+  
+# Video Model Configuration
+video_model:
+  name: "shufflenet_lstm" # Options: vgg_lstm, resnet_lstm, shufflenet_lstm, mobilenet_lstm, resnet_attn, cnn, resnet_trans
+  resnet_version: 18
+  fc_hidden_size: 1024
+  dropout: 0.5
+  feature_dim: 1024  # Output feature dimension
+  
+# Video Training Configuration
+video_training:
+  batch_size: 4
+  learning_rate: 0.00005
+  epochs: 2
+  optimizer: 'adam'
+  scheduler: 'cosine'
+  weight_decay: 0.00001
+  save_dir: '/home/aswath/Projects/capstone/multimodel_lipread/audio_video/models_trained'
+  
+# Video Augmentation Configuration
+video_augmentation:
+  mixup:
+    enabled: true
+    probability: 0.2  # p = 20%
+    alpha: 1.0
+  label_smoothing:
+    enabled: true
+    alpha: 0.1  # α = 0.1
+  affine_transform:
+    enabled: true
+    probability: 0.2  # p = 20%
+    rotation_range: [-10, 10]
+    scale_range: [0.9, 1.1]
+    translation_percent: 0.1
