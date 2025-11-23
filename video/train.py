@@ -16,9 +16,16 @@ import csv
 from tqdm import tqdm
 
 # Local imports
-from data_utils.dataset_loader import get_data_loaders
-from models.resnet_lstm import ResNet2DBiLSTM
 from config.config import load_config
+from data_utils.dataset_loader import get_data_loaders
+
+from models.resnet_lstm import ResNet2DBiLSTM
+from models.vgg_lstm import VGGLSTM
+from models.shufflenet_lstm import ShuffleNet2DBiLSTM
+from models.mobilenet_lstm import MobileNetLSTM
+from models.resnet_attn import ResNet2DAttention
+from models.cnn import CNNOnly
+from models.resnet_trans import ResNet2DTransformer
 
 
 # ============================================================
@@ -177,7 +184,22 @@ def main():
     train_loader, val_loader, test_loader = get_data_loaders(args["config"])
     num_classes = len(train_loader.dataset.classes)
 
-    model = ResNet2DBiLSTM(num_classes=num_classes, config=config).to(args["device"])
+    if model_name == "vgg_lstm":
+        model = VGGLSTM(num_classes=num_classes, config=config).to(args["device"])
+    elif model_name == "resnet_lstm":
+        model = ResNet2DBiLSTM(num_classes=num_classes, config=config).to(args["device"])
+    elif model_name == "shufflenet_lstm":
+        model = ShuffleNet2DBiLSTM(num_classes=num_classes, config=config).to(args["device"])
+    elif model_name == "mobilenet_lstm":
+        model = MobileNetLSTM(num_classes=num_classes, config=config).to(args["device"])
+    elif model_name == "resnet_attn":
+        model = ResNet2DAttention(num_classes=num_classes, config=config).to(args["device"])
+    elif model_name == "cnn":
+        model = CNNOnly(num_classes=num_classes, config=config).to(args["device"])
+    elif model_name == "resnet_trans":
+        model = ResNet2DTransformer(num_classes=num_classes, config=config).to(args["device"])
+    else:
+        raise ValueError(f"Unknown model: {model_name}")
 
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(
@@ -232,7 +254,7 @@ def main():
             "best_val_acc": best_val_acc
         }
 
-        save_checkpoint(ckpt, os.path.join(save_dir, "checkpoint.pth"))
+        save_checkpoint(ckpt, os.path.join(save_dir, f"{model_name}_checkpoint.pth"))
 
         if is_best:
             save_checkpoint(ckpt, os.path.join(save_dir, "model_best.pth"))
