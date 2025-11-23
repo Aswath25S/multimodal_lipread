@@ -23,11 +23,11 @@ model:
 training:
   batch_size: 4
   learning_rate: 0.0001
-  epochs: 100
+  epochs: 2
   optimizer: 'adam'
   scheduler: 'cosine'
   weight_decay: 0.0001
-  save_dir: 'checkpoints/visual'
+  save_dir: '/home/aswath/Projects/capstone/multimodel_lipread/video/models_trained'
   
 # Augmentation Configuration
 augmentation:

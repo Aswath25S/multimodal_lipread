@@ -9,9 +9,7 @@ import torchvision.models as models
 import sys
 from pathlib import Path
 from typing import Dict, Any, Optional, Tuple
-
-# Add parent directory to path to import config
-sys.path.append(str(Path(__file__).parent.parent.parent))
+from torchvision.models import ResNet18_Weights, ResNet34_Weights, ResNet50_Weights
 
 
 class TimeDistributed(nn.Module):
@@ -79,11 +77,11 @@ class ResNet2DBiLSTM(nn.Module):
         
         # Load the appropriate ResNet model
         if resnet_version == 18:
-            base_model = models.resnet18(pretrained=True)
+            base_model = models.resnet18(weights=ResNet18_Weights.IMAGENET1K_V1)
         elif resnet_version == 34:
-            base_model = models.resnet34(pretrained=True)
+            base_model = models.resnet34(weights=ResNet34_Weights.IMAGENET1K_V1)
         elif resnet_version == 50:
-            base_model = models.resnet50(pretrained=True)
+            base_model = models.resnet50(weights=ResNet50_Weights.IMAGENET1K_V1)
         else:
             raise ValueError(f"Unsupported ResNet version: {resnet_version}")
         
