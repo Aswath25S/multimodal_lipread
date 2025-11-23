@@ -3,10 +3,16 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from data_utils.dataset_av import GLipsMultimodalDataset
-from models.ef_cnn_lstm_resnet import create_early_fusion_model
 from config.config import load_config
-import os
 from tqdm import tqdm
+
+from models.ef_cnn_lstm_resnet import create_early_fusion_resnet_model
+from models.early_fusion import create_early_fusion_mobilenet_model
+from models.late_fusion import create_late_fusion_mobilenet_model
+from models.middle_fusion import create_mid_fusion_mobilenet_model
+from models.early_fusion_fast import create_early_fusion_fast
+from models.late_fusion_fast import create_late_fusion_fast
+from models.middle_fusion_fast import create_mid_fusion_fast
 
 def train_epoch(model, loader, criterion, optimizer, device):
     model.train()
@@ -50,7 +56,23 @@ def main(config_path):
     val_loader = DataLoader(val_dataset, batch_size=config.get('training.batch_size'), shuffle=False)
     test_loader = DataLoader(test_dataset, batch_size=config.get('training.batch_size'), shuffle=False)
 
-    model = create_early_fusion_model(config.get('dataset.num_classes'), config).to(device)
+    if config.get('model.name') == 'early_fusion_resnet':
+        model = create_early_fusion_resnet_model(config.get('dataset.num_classes'), config).to(device)
+    elif config.get('model.name') == 'early_fusion_mobilenet':
+        model = create_early_fusion_mobilenet_model(config.get('dataset.num_classes'), config).to(device)
+    elif config.get('model.name') == 'late_fusion_mobilenet':
+        model = create_late_fusion_mobilenet_model(config.get('dataset.num_classes'), config).to(device)
+    elif config.get('model.name') == 'middle_fusion_mobilenet':
+        model = create_mid_fusion_mobilenet_model(config.get('dataset.num_classes'), config).to(device)
+    elif config.get('model.name') == 'early_fusion_fast':
+        model = create_early_fusion_fast(config.get('dataset.num_classes'), config).to(device)
+    elif config.get('model.name') == 'late_fusion_fast':
+        model = create_late_fusion_fast(config.get('dataset.num_classes'), config).to(device)
+    elif config.get('model.name') == 'middle_fusion_fast':
+        model = create_mid_fusion_fast(config.get('dataset.num_classes'), config).to(device)
+    else:
+        raise ValueError(f"Unknown model name: {config.get('model.name')}")
+
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=config.get('training.learning_rate'))
 

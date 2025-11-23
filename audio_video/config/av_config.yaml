@@ -6,6 +6,9 @@ dataset:
   audio_input_size: 117
   num_classes: 4
 
+model:
+  name: 'middle_fusion_mobilenet' # Options: early_fusion_resnet, early_fusion_mobilenet, late_fusion_mobilenet, middle_fusion_mobilenet, early_fusion_fast, late_fusion_fast, middle_fusion_fast
+
 audio:
   input_channels: 1
   input_freq: 128
