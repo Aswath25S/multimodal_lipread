@@ -1,7 +1,8 @@
 # Main
 main:
   base_path: '/home/aswath/Projects/capstone/multimodel_lipread/cues'
-
+  openai_api_key: 'nice_try'
+  
 # Dataset Configuration
 dataset:
   input_dir: '/home/aswath/Projects/capstone/multimodel_lipread/data/GLips_4/lipread_files'

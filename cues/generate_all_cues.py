@@ -59,12 +59,17 @@ def rate_limit_guard(min_interval=22):
         last_request_time = time.time()
 
 
-def process_sequence(word, sequence_id, frame_paths):
+def process_sequence(word, sequence_id, frame_paths, emotion):
     """Send frames safely to OpenAI with retry logic + rate control."""
     selected_frames = frame_paths[:3]
     encoded_frames = [encode_image(frame) for frame in selected_frames]
 
     retries = 6
+    
+    if emotion == "emotion":
+        text = f"Describe the speaker’s emotional cues from their facial expressions and eye movement in these video frames of someone pronouncing '{word}'."
+    else:
+        text = f"Describe the environment around the speaker, include information on light, background scene, place, etc."
 
     for attempt in range(retries):
         try:
@@ -79,7 +84,7 @@ def process_sequence(word, sequence_id, frame_paths):
                         "content": [
                             {
                                 "type": "text",
-                                "text": f"Describe the speaker’s emotional cues from their facial expressions and eye movement in these video frames of someone pronouncing '{word}'."
+                                "text": text,
                             },
                             *[
                                 {
@@ -119,7 +124,7 @@ def process_sequence(word, sequence_id, frame_paths):
     return None
 
 
-def main():
+def main(mode, word, emotion):
     global client
 
     config_path = "/home/aswath/Projects/capstone/multimodel_lipread/cues/config/cues_config.yaml"
@@ -131,8 +136,6 @@ def main():
 
     client = OpenAI(api_key=api_key)
 
-    mode = "train"
-    word = "aufgaben"
     dataset_path = os.path.join(cue_dataset_path, mode, word)
 
     sequences = group_frames_by_sequence(dataset_path)
@@ -144,7 +147,7 @@ def main():
         for key, frame_paths in sequences.items():
             word, sequence_id = key.split("_", 1)
             futures.append(
-                executor.submit(process_sequence, word, sequence_id, frame_paths)
+                executor.submit(process_sequence, word, sequence_id, frame_paths, emotion)
             )
 
         for future in as_completed(futures):
@@ -155,7 +158,7 @@ def main():
                 # Save checkpoint every 10 results
                 if len(results) % 10 == 0:
                     with open(
-                        f"{description_save_path}/interim_results_emotion_{word}_{mode}.json",
+                        f"{description_save_path}/interim_results_{emotion}_{word}_{mode}.json",
                         "w",
                     ) as f:
                         json.dump(results, f, indent=2)
@@ -163,11 +166,25 @@ def main():
         print("Sequences processed - ", len(futures))
 
     with open(
-        f"{description_save_path}/lipreading_analysis_results_emotion_{word}_{mode}.json",
+        f"{description_save_path}/lipreading_analysis_results_{emotion}_{word}_{mode}.json",
         "w",
     ) as f:
         json.dump(results, f, indent=2)
 
 
 if __name__ == "__main__":
-    main()
+    modes = ["train", "test", "val"]
+    words = ["aufgaben", "dagegen", "lieber", "sein"]
+    emotions = ["emotion", "environment"]
+
+    for mode in modes:
+        for word in words:
+            for emotion in emotions:
+                print("\n\n\n")
+                print("Mode: ", mode)
+                print("Word: ", word)
+                print("Emotion: ", emotion)
+                print("\n\n\n")
+                main(mode, word, emotion)
+            print('------------------------------------------------------------------------')
+            print("\n\n\n")
