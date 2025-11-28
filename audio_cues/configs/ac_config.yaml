@@ -1,0 +1,15 @@
+dataset:
+  root_dir: "/home/aswath/Projects/capstone/multimodel_lipread/data/GLips_4"
+  cue_root: "/home/aswath/Projects/capstone/multimodel_lipread/data/GLips_4"
+  input_size: 117
+  split: "train"
+  cue_mode: "emotion"
+  embed_model: "sentence-transformers/all-mpnet-base-v2"
+  cache_dir: ".cache_cues"
+  num_classes: 4
+
+train:
+  batch: 8
+  lr: 0.001
+  epochs: 1
+  
