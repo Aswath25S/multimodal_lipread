@@ -78,5 +78,5 @@ def plot_logs(model_name):
 # Entry Point
 # =============================
 if __name__ == "__main__":
-    model_name = "multimodal_three_mid"   # 🔁 CHANGE to your actual model name
+    model_name = "late_fusion_mobile"   # 🔁 CHANGE to your actual model name
     plot_logs(model_name)

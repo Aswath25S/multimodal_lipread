@@ -9,7 +9,14 @@ from tqdm import tqdm
 
 from configs.config import load_config
 from data_utils.dataset import MultimodalTripleDataset, collate_fn_triple
+
 from models.test_model import MultimodalThreeNet
+from models.early_fusion_mobile import MultimodalAttentionEarly
+from models.middle_fusion_mobile import MultimodalAttentionMiddle
+from models.late_fusion_mobile import MultimodalAttentionLate
+from models.early_fusion_resnet import MultimodalAttentionEarlyResNet
+from models.middle_fusion_resnet import MultimodalAttentionMiddleResNet
+from models.late_fusion_resnet import MultimodalAttentionLateResNet
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -76,7 +83,7 @@ def run_epoch(model, loader, criterion, optimizer=None, train=True):
 
 # -----------------------------
 def main(cfg):
-    model_name = cfg.get("train.model_name", "multimodal_three_mid")
+    model_name = cfg.get("train.model_name")
     out_dir = cfg.get("train.metrics_dir", "./metrics")
     save_dir = cfg.get("train.save_dir", "./models_trained")
     os.makedirs(out_dir, exist_ok=True)
@@ -134,8 +141,22 @@ def main(cfg):
 
     video_cfg = cfg.get("video_model_config", None)
 
-    model = MultimodalThreeNet(num_classes=num_classes, cue_dim=cue_dim,
+    if model_name == "early_fusion_mobile":
+        model = MultimodalAttentionEarly(num_classes=num_classes, cue_dim=cue_dim, video_cfg=video_cfg).to(device)
+    elif model_name == "middle_fusion_mobile":
+        model = MultimodalAttentionMiddle(num_classes=num_classes, cue_dim=cue_dim, video_cfg=video_cfg).to(device)
+    elif model_name == "late_fusion_mobile":
+        model = MultimodalAttentionLate(num_classes=num_classes, cue_dim=cue_dim, video_cfg=video_cfg).to(device)
+    elif model_name == "early_fusion_resnet":
+        model = MultimodalAttentionEarlyResNet(num_classes=num_classes, cue_dim=cue_dim, video_cfg=video_cfg).to(device)
+    elif model_name == "middle_fusion_resnet":
+        model = MultimodalAttentionMiddleResNet(num_classes=num_classes, cue_dim=cue_dim, video_cfg=video_cfg).to(device)
+    elif model_name == "late_fusion_resnet":
+        model = MultimodalAttentionLateResNet(num_classes=num_classes, cue_dim=cue_dim, video_cfg=video_cfg).to(device)
+    else:
+        model = MultimodalThreeNet(num_classes=num_classes, cue_dim=cue_dim,
                                audio_input_size=cfg.get("dataset.input_size"), video_cfg=video_cfg).to(device)
+        raise ValueError(f"Unknown model name: {model_name}")
 
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=cfg.get("train.lr", 1e-4))
