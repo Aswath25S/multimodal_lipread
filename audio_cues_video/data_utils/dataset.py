@@ -1,6 +1,7 @@
 # multimodal/dataset_triple.py
 import os
 import re
+import sys
 import json
 import hashlib
 import numpy as np
@@ -9,6 +10,7 @@ from torch.utils.data import Dataset
 from pathlib import Path
 from sentence_transformers import SentenceTransformer
 
+sys.path.append("/home/aswath/Projects/capstone/multimodel_lipread/audio_cues_video/data_utils")
 from audio_data import GLipsDataset
 
 SID_REGEX = re.compile(r"\d{4}-\d{4}")
@@ -60,7 +62,7 @@ class MultimodalTripleDataset(Dataset):
         self.samples = self._align_modalities_strict()
 
         print("🧠 Loading SentenceTransformer...")
-        self.embedder = SentenceTransformer(embed_model)
+        self.embedder = SentenceTransformer(embed_model, device="cpu")
 
         print("💾 Caching embeddings...")
         self.desc2vec = self._cache_embeddings(embed_model)
@@ -232,12 +234,21 @@ class MultimodalTripleDataset(Dataset):
         mel = self.audio_ds.audio_processor.process_audio_file(s["audio_path"])
         mel = self.audio_ds.audio_processor.normalize_spectrogram(mel)
         mel = mel[:80, :self.audio_ds.input_size]
-        mel = torch.tensor(mel, dtype=torch.float32)
+        if not isinstance(mel, torch.Tensor):
+            mel = torch.tensor(mel, dtype=torch.float32)
+        else:
+            mel = mel.clone().detach().float()
+
 
         # -------------------
         # CUE
         # -------------------
         cue_vec = torch.tensor(self.desc2vec[s["desc"]], dtype=torch.float32)
+        if not isinstance(cue_vec, torch.Tensor):
+            cue_vec = torch.tensor(cue_vec, dtype=torch.float32)
+        else:
+            cue_vec = cue_vec.clone().detach().float()
+
 
         # -------------------
         # VIDEO (lip regions)
@@ -248,6 +259,11 @@ class MultimodalTripleDataset(Dataset):
 
         # (T,H,W,C) -> (C,T,H,W)
         lip = torch.tensor(arr).permute(3, 0, 1, 2).float()
+        if not isinstance(lip, torch.Tensor):
+            lip = torch.tensor(lip, dtype=torch.float32)
+        else:
+            lip = lip.clone().detach().float()
+
 
         # -------------------
         # LABEL
