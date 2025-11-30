@@ -197,12 +197,12 @@ def main(config):
                 "model_state_dict": model.state_dict(),
                 "optimizer_state_dict": optimizer.state_dict(),
                 "val_acc": val_acc
-            }, f"./models_trained/{model_name}.pth")
+            }, f"/home/aswath/Projects/capstone/multimodal_lipread/cues_video/models_trained/{model_name}.pth")
             print("✅ Best model saved")
 
     # Final Test
     print("\n🔍 Loading best model for final evaluation...")
-    ckpt = torch.load(f"./models_trained/{model_name}.pth")
+    ckpt = torch.load(f"/home/aswath/Projects/capstone/multimodal_lipread/cues_video/models_trained/{model_name}.pth")
     model.load_state_dict(ckpt["model_state_dict"])
 
     test_loss, test_acc = validate(model, test_loader, criterion, le)
