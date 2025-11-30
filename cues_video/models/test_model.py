@@ -1,10 +1,10 @@
-# models/multimodal_two.py
 import torch
 import torch.nn as nn
 import torchvision.models as models
 
+
 # ----------------------------
-# TimeDistributed wrapper (same semantics as your video model)
+# TimeDistributed wrapper
 # ----------------------------
 class TimeDistributed(nn.Module):
     def __init__(self, module):
@@ -14,37 +14,35 @@ class TimeDistributed(nn.Module):
     def forward(self, x):
         # x: (B, C, T, H, W)
         B, C, T, H, W = x.size()
-        x = x.permute(0, 2, 1, 3, 4)          # (B, T, C, H, W)
-        x = x.reshape(B * T, C, H, W)         # (B*T, C, H, W)
-        out = self.module(x)                  # (B*T, F)
-        out = out.reshape(B, T, -1)           # (B, T, F)
+        x = x.permute(0, 2, 1, 3, 4)
+        x = x.reshape(B * T, C, H, W)
+        out = self.module(x)
+        out = out.reshape(B, T, -1)
         return out
 
 
 # ----------------------------
-# MobileNet + BiLSTM (inlined from your video model)
+# Video Encoder: MobileNet + BiLSTM
 # ----------------------------
-class MobileNetLSTM_Inlined(nn.Module):
-    def __init__(self, num_classes, feature_dim=256, dropout=0.3, pretrained=True):
+class MobileNetLSTM(nn.Module):
+    def __init__(self, feature_dim=256, dropout=0.3, pretrained=True):
         super().__init__()
 
-        # MobileNetV2 backbone
-        base = models.mobilenet_v2(weights=models.MobileNet_V2_Weights.IMAGENET1K_V1 if pretrained else None)
+        base = models.mobilenet_v2(
+            weights=models.MobileNet_V2_Weights.IMAGENET1K_V1 if pretrained else None
+        )
         base.classifier = nn.Identity()
 
         self.cnn = nn.Sequential(
             base.features,
             nn.AdaptiveAvgPool2d((1, 1)),
-            nn.Flatten()   # -> 1280
+            nn.Flatten()
         )
-        cnn_output_dim = 1280
 
-        # TimeDistributed wrapper around CNN
         self.td = TimeDistributed(self.cnn)
 
-        # BiLSTM
         self.lstm = nn.LSTM(
-            input_size=cnn_output_dim,
+            input_size=1280,
             hidden_size=feature_dim // 2,
             num_layers=2,
             bidirectional=True,
@@ -52,35 +50,16 @@ class MobileNetLSTM_Inlined(nn.Module):
             dropout=dropout
         )
 
-        self.relu = nn.ReLU()
-        self.drop = nn.Dropout(dropout)
-        self.feature_dim = feature_dim
-        # final classifier is not used by wrapper; multimodal model will use features directly
-        self.fc = nn.Linear(feature_dim, num_classes)
+        self.output_dim = feature_dim
 
     def forward(self, x):
-        # x: (B, C, T, H, W)
-        x = self.td(x)          # (B, T, 1280)
-        x, _ = self.lstm(x)     # (B, T, feature_dim)
-        x = x[:, -1, :]         # last time-step
-        x = self.relu(x)
-        x = self.drop(x)
-        out = self.fc(x)
-        return out
-
-    def features(self, x):
-        """
-        Return the penultimate feature vector (pre-classifier) for fusion:
-        (B, feature_dim)
-        """
         x = self.td(x)
         x, _ = self.lstm(x)
-        feat = x[:, -1, :]  # (B, feature_dim)
-        return feat
+        return x[:, -1, :]
 
 
 # ----------------------------
-# Cue encoder (MLP) - unchanged
+# Cue Encoder
 # ----------------------------
 class CueEncoder(nn.Module):
     def __init__(self, input_dim=768):
@@ -90,8 +69,7 @@ class CueEncoder(nn.Module):
             nn.BatchNorm1d(256),
             nn.ReLU(),
             nn.Dropout(0.3),
-            nn.Linear(256, 256),
-            nn.ReLU()
+            nn.Linear(256, 256)
         )
         self.output_dim = 256
 
@@ -100,53 +78,30 @@ class CueEncoder(nn.Module):
 
 
 # ----------------------------
-# Multimodal fusion net (cue + video)
+# Multimodal Model
 # ----------------------------
-class MultimodalTwoNet(nn.Module):
-    def __init__(self, num_classes, cue_dim=768, video_cfg=None, pretrained=True):
-        """
-        video_cfg: dict-like with keys 'feature_dim' and 'dropout' to mirror your video model config.
-        """
+class MultimodalCueVideoNet(nn.Module):
+    def __init__(self, num_classes, cue_dim=768, pretrained=True):
         super().__init__()
 
+        self.video_encoder = MobileNetLSTM(pretrained=pretrained)
         self.cue_encoder = CueEncoder(input_dim=cue_dim)
 
-        v_feature_dim = 256
-        v_dropout = 0.3
-        if video_cfg is not None:
-            try:
-                v_feature_dim = int(video_cfg.get("model", {}).get("feature_dim", v_feature_dim))
-                v_dropout = float(video_cfg.get("model", {}).get("dropout", v_dropout))
-            except Exception:
-                pass
+        fused_dim = self.video_encoder.output_dim + self.cue_encoder.output_dim
 
-        self.video_net = MobileNetLSTM_Inlined(num_classes=num_classes, feature_dim=v_feature_dim, dropout=v_dropout, pretrained=pretrained)
-
-        cue_dim_out = self.cue_encoder.output_dim
-        video_dim = self.video_net.feature_dim
-
-        fusion_dim = cue_dim_out + video_dim
-
-        self.fusion_proj = nn.Sequential(
-            nn.Linear(fusion_dim, 1024),
-            nn.BatchNorm1d(1024),
+        self.fusion = nn.Sequential(
+            nn.Linear(fused_dim, 512),
+            nn.BatchNorm1d(512),
             nn.ReLU(),
             nn.Dropout(0.4),
-            nn.Linear(1024, 512),
-            nn.ReLU()
         )
 
         self.classifier = nn.Linear(512, num_classes)
 
-    def forward(self, cue, lip_regions):
-        """
-        cue: (B, cue_dim)
-        lip_regions: (B, C, T, H, W)
-        """
-        c = self.cue_encoder(cue)              # (B,256)
-        v = self.video_net.features(lip_regions)  # (B, video_feature_dim)
+    def forward(self, cue, video):
+        v = self.video_encoder(video)
+        c = self.cue_encoder(cue)
 
-        fused = torch.cat([c, v], dim=1)
-        x = self.fusion_proj(fused)
-        logits = self.classifier(x)
-        return logits
+        x = torch.cat([v, c], dim=1)
+        x = self.fusion(x)
+        return self.classifier(x)

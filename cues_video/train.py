@@ -1,193 +1,127 @@
-# multimodal/train_double.py
 import os
-import csv
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+from sklearn.preprocessing import LabelEncoder
 
-from configs.config import load_config
-
-# NOTE: update import paths to whichever module path you keep this dataset in.
-from data_utils.dataset import MultimodalCueVideoDataset, collate_fn_double
-
-# Import your fusion models if they support cue+video. Keep the alternatives you had.
-from models.test_model import MultimodalTwoNet
+from data_utils.dataset import MultimodalCueVideoDataset
+from models.test_model import MultimodalCueVideoNet
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
-# -----------------------------
-def init_log_files(model_name, out_dir):
-    os.makedirs(out_dir, exist_ok=True)
-    csv_path = os.path.join(out_dir, f"{model_name}_training_log.csv")
-    txt_path = os.path.join(out_dir, f"{model_name}_training_log.txt")
-    if not os.path.exists(csv_path):
-        with open(csv_path, "w", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow(["epoch", "train_loss", "train_acc", "val_loss", "val_acc", "test_loss", "test_acc"])
-    if not os.path.exists(txt_path):
-        with open(txt_path, "w") as f:
-            f.write("Training Log\n\n")
+# -----------------------
+# Build label encoder
+# -----------------------
+def build_label_encoder(ds):
+    words = sorted(list(set(s["word"] for s in ds.samples)))
+    le = LabelEncoder()
+    le.fit(words)
+    return le
 
 
-def log_to_files(model_name, out_dir, epoch, train_loss, train_acc, val_loss, val_acc, test_loss, test_acc):
-    with open(os.path.join(out_dir, f"{model_name}_training_log.csv"), "a", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow([epoch, train_loss, train_acc, val_loss, val_acc, test_loss, test_acc])
-    with open(os.path.join(out_dir, f"{model_name}_training_log.txt"), "a") as f:
-        f.write(
-            f"Epoch {epoch}\n"
-            f"  Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.2f}%\n"
-            f"  Val Loss:   {val_loss:.4f}, Val Acc:   {val_acc:.2f}%\n"
-            f"  Test Loss:  {test_loss:.4f}, Test Acc:  {test_acc:.2f}%\n\n"
-        )
+# -----------------------
+# Collate function
+# -----------------------
+def collate_fn(batch):
+    cues, videos, labels, sids = zip(*batch)
+    return (
+        torch.stack(cues),
+        torch.stack(videos),
+        list(labels),
+        list(sids)
+    )
 
 
-# -----------------------------
-def run_epoch(model, loader, criterion, optimizer=None, train=True):
+# -----------------------
+# One Epoch
+# -----------------------
+def run_epoch(model, loader, optimizer, criterion, le, train=True):
+    total, correct, loss_sum = 0, 0, 0
     model.train() if train else model.eval()
-    total_loss, correct, total = 0.0, 0, 0
-    desc = "Training" if train else "Validating"
-    pbar = tqdm(loader, desc=desc)
-    for batch in pbar:
-        cue, lips, label = batch
-        cue = cue.to(device)
-        lips = lips.to(device)
-        label = label.to(device)
+
+    pbar = tqdm(loader, desc="Train" if train else "Eval")
+
+    for cues, videos, labels, _ in pbar:
+        cues = cues.to(device)
+        videos = videos.to(device)
+        y = torch.tensor(le.transform(labels), device=device)
 
         if train:
             optimizer.zero_grad()
 
-        out = model(cue, lips)
-        loss = criterion(out, label)
+        out = model(cues, videos)
+        loss = criterion(out, y)
 
         if train:
             loss.backward()
             optimizer.step()
 
-        total_loss += loss.item() * label.size(0)
+        loss_sum += loss.item() * y.size(0)
         pred = out.argmax(1)
-        total += label.size(0)
-        correct += pred.eq(label).sum().item()
+        total += y.size(0)
+        correct += (pred == y).sum().item()
 
-        pbar.set_postfix({"loss": total_loss / total, "acc": 100. * correct / total})
+        pbar.set_postfix({
+            "loss": loss_sum / total,
+            "acc": 100 * correct / total
+        })
 
-    return total_loss / total, 100. * correct / total
+    return loss_sum / total, 100 * correct / total
 
 
-# -----------------------------
-def main(cfg):
-    model_name = cfg.get("train.model_name")
-    out_dir = cfg.get("train.metrics_dir", "./metrics")
-    save_dir = cfg.get("train.save_dir", "./models_trained")
-    os.makedirs(out_dir, exist_ok=True)
-    os.makedirs(save_dir, exist_ok=True)
+# -----------------------
+# MAIN TRAIN LOOP
+# -----------------------
+def main():
+    cue_root = "/home/aswath/Projects/capstone/multimodel_lipread/cues"
+    lip_root = "/home/aswath/Projects/capstone/GLips_4_lip_regions/lipread_files"
+    batch = 4
+    epochs = 30
 
-    init_log_files(model_name, out_dir)
+    train_ds = MultimodalCueVideoDataset(cue_root, lip_root, split="train")
+    val_ds = MultimodalCueVideoDataset(cue_root, lip_root, split="val")
+    test_ds = MultimodalCueVideoDataset(cue_root, lip_root, split="test")
 
-    # datasets
-    train_ds = MultimodalCueVideoDataset(
-        cfg.get("dataset.cue_root"),
-        cfg.get("dataset.lip_regions_root"),
-        input_size=cfg.get("dataset.input_size"),
-        split="train",
-        cue_mode=cfg.get("dataset.cue_mode", "emotion"),
-        embed_model=cfg.get("dataset.embed_model", "sentence-transformers/all-mpnet-base-v2"),
-        cache_dir=cfg.get("dataset.cache_dir", ".cache_cues")
-    )
-
-    val_ds = MultimodalCueVideoDataset(
-        cfg.get("dataset.cue_root"),
-        cfg.get("dataset.lip_regions_root"),
-        input_size=cfg.get("dataset.input_size"),
-        split="val",
-        cue_mode=cfg.get("dataset.cue_mode", "emotion"),
-        embed_model=cfg.get("dataset.embed_model", "sentence-transformers/all-mpnet-base-v2"),
-        cache_dir=cfg.get("dataset.cache_dir", ".cache_cues")
-    )
-
-    test_ds = MultimodalCueVideoDataset(
-        cfg.get("dataset.cue_root"),
-        cfg.get("dataset.lip_regions_root"),
-        input_size=cfg.get("dataset.input_size"),
-        split="test",
-        cue_mode=cfg.get("dataset.cue_mode", "emotion"),
-        embed_model=cfg.get("dataset.embed_model", "sentence-transformers/all-mpnet-base-v2"),
-        cache_dir=cfg.get("dataset.cache_dir", ".cache_cues")
-    )
-
-    batch = cfg.get("train.batch", 4)
-    workers = cfg.get("train.workers", 4)
-
-    train_loader = DataLoader(train_ds, batch_size=batch, shuffle=True, collate_fn=collate_fn_double, num_workers=workers, pin_memory=True)
-    val_loader = DataLoader(val_ds, batch_size=batch, shuffle=False, collate_fn=collate_fn_double, num_workers=workers, pin_memory=True)
-    test_loader = DataLoader(test_ds, batch_size=batch, shuffle=False, collate_fn=collate_fn_double, num_workers=workers, pin_memory=True)
-
-    # classes / dims
-    num_classes = cfg.get("dataset.num_classes", None)
-    if num_classes is None:
-        num_classes = len(train_ds.classes)
-
-    # cue dimensionality (from cached embeddings)
+    le = build_label_encoder(train_ds)
+    num_classes = len(le.classes_)
     cue_dim = next(iter(train_ds.desc2vec.values())).shape[0]
 
-    video_cfg = cfg.get("video_model_config", None)
+    train_loader = DataLoader(train_ds, batch_size=batch, shuffle=True,
+                              collate_fn=collate_fn, num_workers=4)
+    val_loader = DataLoader(val_ds, batch_size=batch, shuffle=False,
+                            collate_fn=collate_fn, num_workers=4)
+    test_loader = DataLoader(test_ds, batch_size=batch, shuffle=False,
+                             collate_fn=collate_fn, num_workers=4)
 
-    # default two-modality model (cue + video)
-    model = MultimodalTwoNet(num_classes=num_classes, cue_dim=cue_dim, video_cfg=video_cfg).to(device)
+    model = MultimodalCueVideoNet(num_classes, cue_dim).to(device)
 
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=cfg.get("train.lr", 1e-4))
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor=0.5, patience=3)
+    optimizer = optim.Adam(model.parameters(), lr=1e-4)
 
-    best_val_acc = 0.0
-    epochs = cfg.get("train.epochs", 30)
+    best = 0
 
     for epoch in range(1, epochs + 1):
         print(f"\nEpoch {epoch}/{epochs}")
 
-        train_loss, train_acc = run_epoch(model, train_loader, criterion, optimizer, train=True)
-        val_loss, val_acc = run_epoch(model, val_loader, criterion, optimizer=None, train=False)
+        train_loss, train_acc = run_epoch(model, train_loader, optimizer, criterion, le, train=True)
+        val_loss, val_acc = run_epoch(model, val_loader, optimizer, criterion, le, train=False)
 
-        scheduler.step(val_loss)
+        print(f"Train: loss={train_loss:.4f}, acc={train_acc:.2f}%")
+        print(f"Val  : loss={val_loss:.4f}, acc={val_acc:.2f}%")
 
-        is_best = val_acc > best_val_acc
-        best_val_acc = max(best_val_acc, val_acc)
+        if val_acc > best:
+            best = val_acc
+            torch.save(model.state_dict(), "model_best.pth")
+            print("✅ Model saved")
 
-        ckpt = {
-            'epoch': epoch,
-            'model_state_dict': model.state_dict(),
-            'optimizer_state_dict': optimizer.state_dict(),
-            'val_acc': val_acc,
-        }
-        torch.save(ckpt, os.path.join(save_dir, f"{model_name}_checkpoint.pth"))
-        if is_best:
-            torch.save(ckpt, os.path.join(save_dir, "model_best.pth"))
-
-        test_loss, test_acc = run_epoch(model, test_loader, criterion, optimizer=None, train=False)
-
-        print(f"Train Loss: {train_loss:.4f} | Train Acc: {train_acc:.2f}%")
-        print(f"Val   Loss: {val_loss:.4f} | Val   Acc: {val_acc:.2f}%")
-        print(f"Test  Loss: {test_loss:.4f} | Test  Acc: {test_acc:.2f}%")
-
-        log_to_files(model_name, out_dir, epoch, train_loss, train_acc, val_loss, val_acc, test_loss, test_acc)
-
-    # final best evaluation
-    best_ckpt_path = os.path.join(save_dir, "model_best.pth")
-    if os.path.exists(best_ckpt_path):
-        best_ckpt = torch.load(best_ckpt_path, map_location=device)
-        model.load_state_dict(best_ckpt["model_state_dict"])
-        test_loss, test_acc = run_epoch(model, test_loader, criterion, optimizer=None, train=False)
-        print(f"\nFinal Test Loss: {test_loss:.4f} | Test Acc: {test_acc:.2f}%")
-        with open(os.path.join(out_dir, f"{model_name}_training_log.txt"), "a") as f:
-            f.write(f"Final Test Loss: {test_loss:.4f} | Test Acc: {test_acc:.2f}%\n")
-    else:
-        print("No best model saved; skipping final test.")
+    print("\n🔍 Final evaluation on test set")
+    model.load_state_dict(torch.load("model_best.pth"))
+    test_loss, test_acc = run_epoch(model, test_loader, optimizer, criterion, le, train=False)
+    print(f"Test Acc = {test_acc:.2f}%")
 
 
 if __name__ == "__main__":
-    cfg_path = "/home/aswath/Projects/capstone/multimodel_lipread/audio_cues_video/configs/acv_config.yaml"
-    cfg = load_config(cfg_path)
-    main(cfg)
+    main()
