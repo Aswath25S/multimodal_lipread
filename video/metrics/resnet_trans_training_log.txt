@@ -1,0 +1,53 @@
+Training Log
+
+Epoch 1
+  Train Loss: 1.3855, Train Acc: 30.44%
+  Val Loss:   1.3766, Val Acc:   23.50%
+  Test Loss:  1.3888, Test Acc:  30.00%
+
+Epoch 2
+  Train Loss: 1.3051, Train Acc: 38.50%
+  Val Loss:   1.2551, Val Acc:   41.00%
+  Test Loss:  1.3267, Test Acc:  36.50%
+
+Epoch 3
+  Train Loss: 1.2574, Train Acc: 43.44%
+  Val Loss:   1.2984, Val Acc:   38.00%
+  Test Loss:  1.3302, Test Acc:  40.00%
+
+Epoch 4
+  Train Loss: 1.1597, Train Acc: 49.69%
+  Val Loss:   1.3271, Val Acc:   40.00%
+  Test Loss:  1.3450, Test Acc:  42.00%
+
+Epoch 5
+  Train Loss: 1.0597, Train Acc: 55.31%
+  Val Loss:   1.3524, Val Acc:   42.50%
+  Test Loss:  1.3293, Test Acc:  40.00%
+
+Epoch 6
+  Train Loss: 0.9791, Train Acc: 60.31%
+  Val Loss:   1.3869, Val Acc:   44.00%
+  Test Loss:  1.4303, Test Acc:  38.00%
+
+Epoch 7
+  Train Loss: 0.8773, Train Acc: 67.06%
+  Val Loss:   1.5250, Val Acc:   42.00%
+  Test Loss:  1.6000, Test Acc:  38.50%
+
+Epoch 8
+  Train Loss: 0.7344, Train Acc: 73.69%
+  Val Loss:   1.5309, Val Acc:   47.50%
+  Test Loss:  1.5845, Test Acc:  45.50%
+
+Epoch 9
+  Train Loss: 0.6181, Train Acc: 77.62%
+  Val Loss:   1.5917, Val Acc:   40.50%
+  Test Loss:  1.6879, Test Acc:  42.50%
+
+Epoch 10
+  Train Loss: 0.4692, Train Acc: 85.25%
+  Val Loss:   1.7170, Val Acc:   44.50%
+  Test Loss:  1.7294, Test Acc:  43.00%
+
+Final Test Loss: 1.5845, Final Test Acc: 45.50%
