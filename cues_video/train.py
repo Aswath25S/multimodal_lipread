@@ -11,8 +11,14 @@ from sklearn.preprocessing import LabelEncoder
 from configs.config import load_config
 
 from data_utils.dataset import MultimodalCueVideoDataset
-from models.test_model import MultimodalCueVideoNet
 
+from models.test_model import MultimodalCueVideoNet
+from models.early_fusion_mobile import EarlyAttentionFusion
+from models.middle_fusion_mobile import MiddleAttentionFusion
+from models.late_fusion_mobile import LateAttentionFusion
+from models.early_fusion_resnet import EarlyAttentionResNet
+from models.middle_fusion_resnet import MiddleAttentionResNet
+from models.late_fusion_resnet import LateAttentionResNet
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -138,7 +144,7 @@ def validate(model, loader, criterion, le):
 # MAIN
 # -----------------------------
 def main(config):
-    model_name = "cue_video_model"
+    model_name = config.get("train.model_name")
 
     cue_root = config.get("dataset.cue_root")
     lip_root = config.get("dataset.lip_regions_root")
@@ -166,7 +172,21 @@ def main(config):
     test_loader = DataLoader(test_ds, batch_size=batch_size, shuffle=False, collate_fn=collate_fn, num_workers=4)
 
     # Model
-    model = MultimodalCueVideoNet(num_classes, cue_dim).to(device)
+    if model_name == "early_fusion_mobile":
+        model = EarlyAttentionFusion(num_classes, cue_dim).to(device)
+    elif model_name == "middle_fusion_mobile":
+        model = MiddleAttentionFusion(num_classes, cue_dim).to(device)
+    elif model_name == "late_fusion_mobile":
+        model = LateAttentionFusion(num_classes, cue_dim).to(device)
+    elif model_name == "early_fusion_resnet":
+        model = EarlyAttentionResNet(num_classes, cue_dim).to(device)
+    elif model_name == "middle_fusion_resnet":
+        model = MiddleAttentionResNet(num_classes, cue_dim).to(device)
+    elif model_name == "late_fusion_resnet":
+        model = LateAttentionResNet(num_classes, cue_dim).to(device)
+    else:
+        model = MultimodalCueVideoNet(num_classes, cue_dim).to(device)
+
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", patience=3, factor=0.5)
@@ -197,12 +217,12 @@ def main(config):
                 "model_state_dict": model.state_dict(),
                 "optimizer_state_dict": optimizer.state_dict(),
                 "val_acc": val_acc
-            }, f"/home/aswath/Projects/capstone/multimodal_lipread/cues_video/models_trained/{model_name}.pth")
+            }, f"./models_trained/{model_name}.pth")
             print("✅ Best model saved")
 
     # Final Test
     print("\n🔍 Loading best model for final evaluation...")
-    ckpt = torch.load(f"/home/aswath/Projects/capstone/multimodal_lipread/cues_video/models_trained/{model_name}.pth")
+    ckpt = torch.load(f"./models_trained/{model_name}.pth")
     model.load_state_dict(ckpt["model_state_dict"])
 
     test_loss, test_acc = validate(model, test_loader, criterion, le)
