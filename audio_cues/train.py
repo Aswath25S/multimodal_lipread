@@ -98,7 +98,7 @@ def run_epoch(model, loader, criterion, optimizer=None, train=True):
 # Main Training Function
 # -----------------------------
 def main(cfg):
-    model_name = "middle_fusion_resnet"
+    model_name = "middle_fusion_mobile"
     os.makedirs("/home/aswath/Projects/capstone/multimodel_lipread/audio_cues/models_trained", exist_ok=True)
     init_log_files(model_name)
 

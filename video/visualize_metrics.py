@@ -64,5 +64,6 @@ def plot_logs(model_name):
 
 
 if __name__ == "__main__":
-    model_name = "2dcnn_bilstm"   # change as needed
-    plot_logs(model_name)
+    models = ["cnn", "resnet_attn", "resnet_lstm", "resnet_trans", "shufflenet_lstm"]
+    for model_name in models:
+        plot_logs(model_name)

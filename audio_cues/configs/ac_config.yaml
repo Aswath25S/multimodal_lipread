@@ -10,7 +10,7 @@ dataset:
   num_classes: 4
 
 train:
-  batch: 4
+  batch: 32
   lr: 0.001
   epochs: 5
   

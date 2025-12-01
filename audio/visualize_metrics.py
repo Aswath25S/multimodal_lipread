@@ -54,5 +54,6 @@ def plot_logs(model_name):
 
 
 if __name__ == "__main__":
-    model_name = "resnet"
-    plot_logs(model_name)
+    models = ["resnet", "lstm_reset_attn", "lstm_resnet_trans", "resnet_lstm", "vgg_lstm", "vgg"]
+    for model_name in models:
+        plot_logs(model_name)

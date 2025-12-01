@@ -17,7 +17,7 @@ from config.config import load_config
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-def get_constants(config, mode="env"):
+def get_constants(config, mode="emotion"):
     data_dir = config.get("old_description.input_dir")
     base_path = config.get("main.base_path")
 

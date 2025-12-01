@@ -260,7 +260,7 @@ def main():
     embed_dim = X_train.shape[1]
     model = AttentionLSTMClassifier(embed_dim=embed_dim, hidden_dim=128, num_labels=len(unique_words))
 
-    device = torch.device("cpu" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
 
     train(model, train_loader, valid_loader, device, LR, EPOCHS, metrics_path, models_path, model_name="minilm_lstm_attn")

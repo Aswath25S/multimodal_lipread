@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import os
 
 def plot_logs(model_name):
-    csv_path = f"./metrics/{model_name}_training_log.csv"
+    csv_path = f"./emotion_metrics/{model_name}_training_log.csv"
 
     if not os.path.exists(csv_path):
         print(f"Error: {csv_path} not found.")
@@ -59,5 +59,6 @@ def plot_logs(model_name):
 
 
 if __name__ == "__main__":
-    model_name = "dense_nn"
-    plot_logs(model_name)
+    models = ["dense_nn", "minilm_cnn_bilstm_attn", "minilm_cnn_lstm", "minilm_lstm", "multi_attn"]
+    for model_name in models:
+        plot_logs(model_name)
