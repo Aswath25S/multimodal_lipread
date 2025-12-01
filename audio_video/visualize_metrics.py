@@ -61,5 +61,6 @@ def plot_logs(model_name):
 
 if __name__ == "__main__":
     # Example: change to your trained multimodal model
-    model_name = "middle_fusion_mobilenet"
-    plot_logs(model_name)
+    models = ["early_fusion_fast", "early_fusion_mobilenet", "late_fusion_fast", "middle_fusion_fast", "middle_fusion_mobilenet"]
+    for model in models:
+        plot_logs(model)
