@@ -1,0 +1,3 @@
+Final Test Loss: 1.6914
+Final Test Acc: 43.50%
+Best Val Acc: 49.00%

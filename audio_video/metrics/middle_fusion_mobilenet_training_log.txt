@@ -1,11 +1,10 @@
 Epoch 1
-  Train Loss: 1.6566, Train Acc: 65.50%
-  Val Loss:   0.6136, Val Acc:   74.00%
-  Test Loss:  0.5024, Test Acc:  84.00%
+  Train Loss: 2.3006, Train Acc: 55.31%
+  Val Loss:   0.6656, Val Acc:   75.50%
+  Test Loss:  0.6003, Test Acc:  80.50%
 
 Epoch 2
-  Train Loss: 0.5709, Train Acc: 78.62%
-  Val Loss:   0.6402, Val Acc:   75.00%
-  Test Loss:  0.4741, Test Acc:  86.00%
+  Train Loss: 0.5382, Train Acc: 81.25%
+  Val Loss:   0.6013, Val Acc:   77.50%
+  Test Loss:  0.5167, Test Acc:  81.00%
 
-Final Test Loss: 0.4741, Final Test Acc: 86.00%

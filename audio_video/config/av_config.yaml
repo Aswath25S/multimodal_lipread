@@ -19,9 +19,9 @@ video:
   lstm_hidden: 256
 
 training:
-  epochs : 2
+  epochs : 10
   learning_rate: 0.0003
-  batch_size: 4
+  batch_size: 32
 
 
 

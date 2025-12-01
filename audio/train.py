@@ -142,7 +142,6 @@ def main(config_path, device):
     learning_rate = config.get('training.learning_rate')
     weight_decay = config.get('training.weight_decay')
     epochs = config.get('training.epochs')
-    epochs = 5
     model_name = config.get('model.name')
     version = config.get('model.version')
 

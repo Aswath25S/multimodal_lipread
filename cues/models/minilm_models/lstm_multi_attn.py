@@ -30,9 +30,9 @@ def get_constants(config, mode="env"):
 
     # all-MiniLM-L6-v2, all-MiniLM-L12-v2, all-mpnet-base-v2, all-distilroberta-v1
     EMB_MODEL_NAME = "sentence-transformers/distilbert-base-uncased"
-    BATCH_SIZE = 16
+    BATCH_SIZE = 8
     SEED = 42
-    NUM_EPOCHS = 12
+    NUM_EPOCHS = 30
     LR = 1e-3
     WARMUP_PROPORTION = 0.1
 

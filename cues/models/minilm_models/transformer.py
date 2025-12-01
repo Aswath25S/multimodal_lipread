@@ -32,9 +32,9 @@ def get_constants(config, mode="env"):
         "sentence-transformers/all-mpnet-base-v2"
     ]
 
-    BATCH_SIZE = 16
+    BATCH_SIZE = 8
     SEED = 42
-    NUM_EPOCHS = 12
+    NUM_EPOCHS = 30
     LR = 1e-3
 
     return data_dir, base_path, json_files, EMB_MODEL_NAMES, BATCH_SIZE, SEED, NUM_EPOCHS, LR

@@ -13,7 +13,7 @@ preprocessing:
   
 # Model Configuration
 model:
-  name: "shufflenet_lstm" # Options: vgg_lstm, resnet_lstm, shufflenet_lstm, mobilenet_lstm, resnet_attn, cnn, resnet_trans
+  name: "resnet_attn" # Options: vgg_lstm, resnet_lstm, shufflenet_lstm, mobilenet_lstm, resnet_attn, cnn, resnet_trans
   resnet_version: 18
   fc_hidden_size: 1024
   dropout: 0.5
@@ -21,9 +21,9 @@ model:
   
 # Training Configuration
 training:
-  batch_size: 4
+  batch_size: 32
   learning_rate: 0.00005
-  epochs: 2
+  epochs: 10
   optimizer: 'adam'
   scheduler: 'cosine'
   weight_decay: 0.00001

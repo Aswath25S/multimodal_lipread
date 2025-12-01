@@ -16,7 +16,7 @@ from config.config import load_config
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-def get_constants(config, mode="env"):
+def get_constants(config, mode="emotion"):
     data_dir = config.get("old_description.input_dir")
     base_path = config.get("main.base_path")
 
@@ -29,9 +29,9 @@ def get_constants(config, mode="env"):
 
     # all-MiniLM-L6-v2, all-MiniLM-L12-v2, all-mpnet-base-v2, all-distilroberta-v1
     EMBEDDING_MODEL = "all-MiniLM-L6-v2"
-    BATCH_SIZE = 16
+    BATCH_SIZE = 8
     SEED = 42
-    NUM_EPOCHS = 12
+    NUM_EPOCHS = 30
     LR = 1e-3
 
     return data_dir, base_path, json_files, EMBEDDING_MODEL, BATCH_SIZE, SEED, NUM_EPOCHS, LR
@@ -260,7 +260,7 @@ def main():
     embed_dim = X_train.shape[1]
     model = LSTMClassifier(embed_dim=embed_dim, hidden_dim=128, num_labels=len(unique_words))
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cpu" if torch.cuda.is_available() else "cpu")
     model.to(device)
 
     train(model, train_loader, valid_loader, device, LR, EPOCHS, metrics_path, models_path, model_name="minilm_lstm")

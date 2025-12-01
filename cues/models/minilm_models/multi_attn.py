@@ -28,9 +28,9 @@ def get_constants(config, mode="env"):
 
     # Sentence Transformer options: all-MiniLM-L6-v2, all-MiniLM-L12-v2, all-mpnet-base-v2, all-distilroberta-v1
     EMB_MODEL_NAME = "sentence-transformers/all-mpnet-base-v2"
-    BATCH_SIZE = 16
+    BATCH_SIZE = 8
     SEED = 42
-    NUM_EPOCHS = 12
+    NUM_EPOCHS = 30
     LR = 1e-3
 
     return data_dir, base_path, json_files, EMB_MODEL_NAME, BATCH_SIZE, SEED, NUM_EPOCHS, LR

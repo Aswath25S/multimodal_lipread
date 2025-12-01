@@ -17,7 +17,7 @@ from config.config import load_config
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-def get_constants(config, mode="env"):
+def get_constants(config, mode="emotion"):
     data_dir = config.get("old_description.input_dir")
     base_path = config.get("main.base_path")
 
@@ -30,9 +30,9 @@ def get_constants(config, mode="env"):
 
     # Sentence Transformer options: all-MiniLM-L6-v2, all-MiniLM-L12-v2, all-mpnet-base-v2, all-distilroberta-v1
     EMB_MODEL_NAME = "sentence-transformers/all-mpnet-base-v2"
-    BATCH_SIZE = 16
+    BATCH_SIZE = 8
     SEED = 42
-    NUM_EPOCHS = 12
+    NUM_EPOCHS = 30
     LR = 1e-3
     WARMUP_PROPORTION = 0.1
 
@@ -243,7 +243,7 @@ def main():
     train_ds, test_ds = splits["train"], splits["test"]
 
     tokenizer, emb_model = get_tokenizer_and_model(EMB_MODEL)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cpu" if torch.cuda.is_available() else "cpu")
     emb_model.to(device)
 
     print("Embedding training set (token-level)...")

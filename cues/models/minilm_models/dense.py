@@ -15,7 +15,7 @@ from config.config import load_config
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-def get_constants(config, mode="env"):
+def get_constants(config, mode="emotion"):
     data_dir = config.get("old_description.input_dir")
     base_path = config.get("main.base_path")
 
@@ -27,9 +27,9 @@ def get_constants(config, mode="env"):
     ]
 
     EMB_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
-    BATCH_SIZE = 16
+    BATCH_SIZE = 8
     SEED = 42
-    NUM_EPOCHS = 12
+    NUM_EPOCHS = 30
     LR = 1e-3
 
     return data_dir, base_path, json_files, EMB_MODEL_NAME, BATCH_SIZE, SEED, NUM_EPOCHS, LR

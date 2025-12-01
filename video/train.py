@@ -173,6 +173,8 @@ def get_args():
 # ============================================================
 def main():
     args = get_args()
+    # if args["device"] == "cuda":
+    #     torch.cuda.empty_cache()
 
     config = load_config(args["config"])
     save_dir = config.get('training.save_dir')

@@ -8,7 +8,7 @@ dataset:
   
 # Model Configuration
 model:
-  name: 'resnet'  # Options: resnet, resnet_lstm, vgg, vgg_lstm, lstm_resnet, lstm_resnet_attn, lstm_resnet_trans
+  name: 'lstm_resnet_trans'  # Options: resnet, resnet_lstm, vgg, vgg_lstm, lstm_resnet, lstm_resnet_attn, lstm_resnet_trans
   version: 16
   fc_hidden_size: 512
   dropout: 0.5
@@ -19,4 +19,4 @@ training:
   batch_size: 32
   learning_rate: 0.0005
   weight_decay: 0.0001
-  epochs: 3
+  epochs: 10
