@@ -12,9 +12,9 @@ dataset:
 train:
   batch: 32
   lr: 0.00001
-  epochs: 5
+  epochs: 20
   workers: 4
-  model_name: "middle_fusion_mobile" #early_fusion_mobile, middle_fusion_mobile, late_fusion_mobile, early_fusion_resnet, middle_fusion_resnet, late_fusion_resnet
+  model_name: "middle_fusion_resnet" #early_fusion_mobile, middle_fusion_mobile, late_fusion_mobile, early_fusion_resnet, middle_fusion_resnet, late_fusion_resnet
   metrics_dir: "/home/aswath/Projects/capstone/multimodel_lipread/audio_cues_video/metrics"
   save_dir: "/home/aswath/Projects/capstone/multimodel_lipread/audio_cues_video/models_trained"  
 
